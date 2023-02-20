@@ -1,0 +1,41 @@
+name: Build the extension
+
+on:
+  push:
+    branches: [ "master" ]
+    tags: [ "v*" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.1
+          coverage: none
+          tools: composer:v2
+
+      - name: Build PDO snowflake
+        run: |
+          phpize
+          export PHP_HOME=.
+          bash ./scripts/build_pdo_snowflake.sh
+
+      - name: Upload pdo_snowflake.so
+        uses: actions/upload-artifact@v3
+        with:
+          name: artifacts
+          path: |
+            ./modules/pdo_snowflake.so
+            ./libsnowflakeclient/cacert.pem
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            ./modules/pdo_snowflake.so
+            ./libsnowflakeclient/cacert.pem
